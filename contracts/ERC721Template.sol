@@ -17,7 +17,6 @@ contract ERC721Template is
     Pausable,
     AccessControl
 {
-    
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
 
@@ -33,6 +32,7 @@ contract ERC721Template is
     uint256 public merkleReservedMinTokenID;
     uint256 public merkleReservedMaxTokenID;
 
+    // reserved tokenID
     function isReservedTokenID(uint256 tokenID) internal view returns(bool) {
         return (tokenID >= merkleReservedMinTokenID && tokenID <= merkleReservedMaxTokenID);
     }
@@ -42,11 +42,13 @@ contract ERC721Template is
         _;
     }
 
+    // minted successful
     function updateMaxTokenID(uint256 tokenID) internal {
         if(!isReservedTokenID(tokenID) && tokenID > maxTokenID)
             maxTokenID = tokenID;
     }
 
+    // only once mint is allowed
     mapping( address => bool ) public reserved;
 
     constructor (
@@ -71,11 +73,13 @@ contract ERC721Template is
         _grantRole(MINTER_ROLE, operator);
     }
 
+    // Un-limited for owner
     modifier onlyClaimable(){
         require(isCanClaim, "Only Claimable");
          _;     
     }
 
+    // merkleMint
     modifier onlyOnce(address to) {
         require(!reserved[to], "Only Once");
          _;
@@ -111,8 +115,9 @@ contract ERC721Template is
         // Verify the merkle proof.
         bytes32 node = keccak256(abi.encodePacked(to, tokenID, uri));
         if (!MerkleProof.verify(merkleProof, merkleRoot, node)) revert InvalidProof();
-        // mint
+        // Marked is called for user{ to }
         reserved[to] = true;
+        // Mint
         _safeMint(to, tokenID);
         _setTokenURI(tokenID, uri);
     }
@@ -121,10 +126,12 @@ contract ERC721Template is
     function selfMint (
         string memory uri
     ) external whenNotPaused() onlyClaimable() {
+        // Get new tokenID
         uint256 tokenID = maxTokenID + 1;
         if(isReservedTokenID(tokenID)) {
             tokenID = merkleReservedMaxTokenID + 1;
         }
+        // mint
          _safeMint(msg.sender, tokenID);
         _setTokenURI(tokenID, uri);
     }
@@ -143,14 +150,14 @@ contract ERC721Template is
     // (MINTER_ROLE) mint（batch）
     function ownerBatchMint (
         address to, 
-        uint256[] calldata TokenIDs, 
-        string[] memory uris
+        uint256[] calldata TokenID,
+        string[] memory uri
     ) external whenNotPaused() onlyRole(MINTER_ROLE) {
-        require(TokenIDs.length == uris.length, "Array length must equal. ");
+        require(TokenID.length == uri.length, "Array length must equal. ");
         
-        for (uint256 i = 0; i < TokenIDs.length; i++) {
-            _safeMint(to, TokenIDs[i]);
-            _setTokenURI(TokenIDs[i], uris[i]);
+        for (uint256 i = 0; i < TokenID.length; i++) {
+            _safeMint(to, TokenID[i]);
+            _setTokenURI(TokenID[i], uri[i]);
         }
     }
 
