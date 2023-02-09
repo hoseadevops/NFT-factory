@@ -64,29 +64,34 @@ async function deployERC721Template() {
     tokenID : testUser[1] + 100,
     proof
   };
-  return { nft, config, user};
+  return { nft, config, user };
 }
 
 async function deployEscrow() {
   const { admin, operator } = await initUsers();
-  const nft = await deployERC721Template();
+  const { nft, config, user} = await deployERC721Template();
   const Escrow = await ethers.getContractFactory("Escrow");
   const escrow = await Escrow.deploy (
     admin.address,
     operator.address,
-    nft.nft.address
+    nft.address
   );
-  return { escrow };
+  return { escrow, nft, config, user };
 }
+
 async function deployVault() {
   const { admin, operator } = await initUsers();
+  const { escrow, nft, config, user } = await deployEscrow();
   const Vault = await ethers.getContractFactory("Vault");
   const vault = await Vault.deploy (
     admin.address,
     operator.address,
-    nft.nft.address
+    escrow.address
   );
-  return { vault };
+
+  await escrow.connect(operator).updateVault(vault.address);
+
+  return { vault, escrow, nft, config, user };
 }
 
 module.exports = {

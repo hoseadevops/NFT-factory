@@ -70,7 +70,7 @@ describe("ERC721Template", function () {
         
         const {operator, sam} = await initUsers();
         await nft.connect(operator).ownerMint(sam.address, tokenID, "");
-      
+
         tokenID  = 88;
         await nft.connect(operator).ownerMint(sam.address, tokenID, "");
         expect(await nft.ownerOf(tokenID)).to.be.eq(sam.address);

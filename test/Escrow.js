@@ -5,45 +5,44 @@ const {
 const { anyValue } = require("@nomicfoundation/hardhat-chai-matchers/withArgs");
 const { expect } = require("chai");
   
-const { deployERC721Template } = require('./common.js')
+const { deployVault, initUsers } = require('./common.js')
 
 describe("Escrow", function () {
-
-  async function deployEscrow() {
-    const [owner, admin, operator, bob, sam, tom] = await ethers.getSigners();
+  describe("deposit", function () {  
     
-    const Escrow = await ethers.getContractFactory("Escrow");
-    const escrow = await Escrow.deploy (
-      admin.address,
-      operator.address,
-      deployERC721Template.nft.address
-    );  
-    return { escrow, deployERC721Template, bob, admin, operator };
-  }
+    describe("vault", function () {  
 
-  describe("mint", function () {
-    describe("user mint", function () {
+      it("Should deposit to vault.", async function () {
+        const { vault, escrow, nft, config, user } = await loadFixture(deployVault);
+        const { bob,sam } = await initUsers();
 
-      it("Should mint token by merkle tree.", async function () {
-        const { nft, config, proof, testUser, bob } = await loadFixture(deployEscrow);
+        await expect(nft.connect(bob).selfMint("")).not.to.be.reverted;
+        let tokenID1 = await nft.maxTokenID();
 
-        let test = {
-          user : testUser[0],
-          tokenID : testUser[1] + 100,
-          proof
-        };
-        await nft.connect(bob).merkleMint(
-          test.user,
-          test.tokenID,
-          "",
-          test.proof
-        )
-        expect(await nft.ownerOf(test.tokenID)).to.be.eq(test.user);
-        await getMaxTokenID(nft);
+        await expect(nft.connect(bob).selfMint("")).not.to.be.reverted;
+        let tokenID2 = await nft.maxTokenID();
+
+        expect(await nft.ownerOf(tokenID1)).to.be.eq(bob.address);
+        expect(await nft.ownerOf(tokenID2)).to.be.eq(bob.address);
+
+        await expect(nft.connect(bob)["safeTransferFrom(address,address,uint256)"](bob.address, escrow.address, tokenID1)).not.to.be.reverted;
+
+        await expect(nft.connect(bob)["safeTransferFrom(address,address,uint256)"](bob.address, escrow.address, tokenID2)).to.be.revertedWith("Already holding");
+
+        expect(await nft.ownerOf(tokenID1)).to.be.eq(vault.address);
+        expect(await nft.ownerOf(tokenID2)).to.be.eq(bob.address);
+
+        await expect(escrow.connect(sam).withdraw(tokenID1)).to.be.revertedWith("Only Owner");
+
+        await expect(escrow.connect(bob).withdraw(tokenID1)).to.be.emit(escrow, 'Withdraw');
+        expect(await nft.ownerOf(tokenID1)).to.be.eq(bob.address);
+
+        await expect(nft.connect(bob)["safeTransferFrom(address,address,uint256)"](bob.address, escrow.address, tokenID2)).not.to.be.reverted;
+        expect(await nft.ownerOf(tokenID2)).to.be.eq(vault.address);
       });
 
 
     });
+  
   });
-
 });

@@ -16,7 +16,7 @@ contract Escrow is
 {
     using Address for address;
 
-    bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
+    bytes32 public constant OPERATOR_ROLE = keccak256("OPERATOR_ROLE");
 
     IERC721 public nft;
     IVault public vault;
@@ -28,13 +28,13 @@ contract Escrow is
     event Withdraw(address indexed sender, address indexed to, uint256 tokenID);
 
     modifier onlyNFT(address token) {
-        require(token.isContract(), "Only CA can call.");
-        require(token == address(nft), "nonsupport");
+        require(token.isContract(), "Only CA");
+        require(token == address(nft), "nonSupport");
         _;
     }
 
     modifier whenNotHold(address from) {
-        require(ledger[from] == 0, "When not hold.");
+        require(ledger[from] == 0, "Already holding");
         _;
     }
 
@@ -44,7 +44,7 @@ contract Escrow is
     }
 
     function _onlyOwner(address from, uint256 tokenID) internal view {
-        require(ledger[from] != 0 && ledger[from] == tokenID, "Only owner.");
+        require(ledger[from] != 0 && ledger[from] == tokenID, "Only Owner");
     }
 
     constructor(
@@ -54,14 +54,18 @@ contract Escrow is
     ) {
         nft = token;
         _grantRole(DEFAULT_ADMIN_ROLE, admin);
-        _grantRole(PAUSER_ROLE, operator);
+        _grantRole(OPERATOR_ROLE, operator);
     }
 
-    function pause() public onlyRole(PAUSER_ROLE) {
+    function updateVault(IVault pool) external onlyRole(OPERATOR_ROLE) {
+        vault = pool;
+    }
+
+    function pause() public onlyRole(OPERATOR_ROLE) {
         _pause();
     }
 
-    function unpause() public onlyRole(PAUSER_ROLE) {
+    function unpause() public onlyRole(OPERATOR_ROLE) {
         _unpause();
     }
 
@@ -78,14 +82,14 @@ contract Escrow is
     }
 
     function onERC721Received (
-        address,
+        address sender,
         address from,
         uint256 tokenID,
         bytes memory
     ) public virtual override whenNotPaused() onlyNFT(msg.sender) whenNotHold(from) returns (bytes4) {
         recordLedger(from, tokenID);
         IERC721(nft).safeTransferFrom(address(this), address(vault), tokenID);
-        emit Deposit(msg.sender, from, tokenID);
+        emit Deposit(sender, from, tokenID);
         return this.onERC721Received.selector;
     }
 
