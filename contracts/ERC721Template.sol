@@ -69,8 +69,6 @@ contract ERC721Template is
         _grantRole(MINTER_ROLE, operator);
     }
 
-
-
     function updateBaseURI (
         string memory prefixURI
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
