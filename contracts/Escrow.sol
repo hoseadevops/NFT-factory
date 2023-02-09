@@ -18,16 +18,16 @@ contract Escrow is
 
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
 
-    IERC721 public ERC721;
+    IERC721 public nft;
 
     IVault public vault;
 
     // user => tokenID
     mapping(address => uint256 ) public ledger;
 
-    modifier onlyNFT(address nft) {
-        require(nft.isContract(), "Only CA can call.");
-        require(nft == address(ERC721), "nonsupport");
+    modifier onlyNFT(address token) {
+        require(token.isContract(), "Only CA can call.");
+        require(token == address(nft), "nonsupport");
         _;
     }
 
@@ -48,9 +48,9 @@ contract Escrow is
     constructor(
         address admin,
         address operator,
-        IERC721 nft
+        IERC721 token
     ) {
-        ERC721 = nft;
+        nft = token;
         _grantRole(DEFAULT_ADMIN_ROLE, admin);
         _grantRole(PAUSER_ROLE, operator);
     }
@@ -65,12 +65,12 @@ contract Escrow is
 
     function deposit(uint256 tokenID) external whenNotPaused() whenNotHold(msg.sender) {
         recordLedger(msg.sender, tokenID);
-        IERC721(ERC721).safeTransferFrom(msg.sender, address(vault), tokenID);
+        IERC721(nft).safeTransferFrom(msg.sender, address(vault), tokenID);
     }
 
     function withdraw(uint256 tokenID) external whenNotPaused() onlyOwner(msg.sender, tokenID) {
         recordLedger(msg.sender, 0);
-        IVault(vault).withdrawERC721(address(ERC721), msg.sender, tokenID);
+        IVault(vault).withdrawERC721(address(nft), msg.sender, tokenID);
     }
 
     function onERC721Received (
@@ -80,7 +80,7 @@ contract Escrow is
         bytes memory
     ) public virtual override whenNotPaused() onlyNFT(msg.sender) whenNotHold(from) returns (bytes4) {
         recordLedger(from, tokenID);
-        IERC721(ERC721).safeTransferFrom(address(this), address(vault), tokenID);
+        IERC721(nft).safeTransferFrom(address(this), address(vault), tokenID);
         return this.onERC721Received.selector;
     }
 
@@ -90,25 +90,24 @@ contract Escrow is
 
     function EmergencyWithdraw (
         address[] calldata to,
-        uint256[] calldata tokenIds
+        uint256[] calldata tokenID
     ) onlyRole(DEFAULT_ADMIN_ROLE) external {
         
-        require(tokenIds.length == to.length, "Array length must equal. ");
+        require(tokenID.length == to.length, "Array length must equal. ");
 
-        for( uint256 i = 0; i < tokenIds.length; i++ ){
-            _onlyOwner(to[i], tokenIds[i]);
+        for( uint256 i = 0; i < tokenID.length; i++ ){
+            _onlyOwner(to[i], tokenID[i]);
         }
-        IVault(vault).batchWithdrawERC721(address(ERC721), to, tokenIds);
+        IVault(vault).batchWithdrawERC721(address(nft), to, tokenID);
     }
 
     function EmergencyWithdraw (
-        address nft,
+        address token,
         address to,
-        uint256[] calldata tokenIds
+        uint256[] calldata tokenID
     ) onlyRole(DEFAULT_ADMIN_ROLE) external {
-        for (uint256 i = 0; i < tokenIds.length; i++) {
-            IERC721(nft).safeTransferFrom(address(this), to, tokenIds[i]);
+        for (uint256 i = 0; i < tokenID.length; i++) {
+            IERC721(token).safeTransferFrom(address(this), to, tokenID[i]);
         }
     }
-
 }

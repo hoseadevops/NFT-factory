@@ -17,9 +17,6 @@ contract Vault is
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
     bytes32 public constant WITHDRAW_ROLE = keccak256("WITHDRAW_ROLE");
 
-    IERC721 public ERC721;
-    address public vault;
-
     modifier onlyEOA(address to) {
         _onlyEOA(to);
         _;
@@ -47,17 +44,17 @@ contract Vault is
         _unpause();
     }
 
-    function withdrawERC721(address nft, address to, uint256 tokenId) external onlyRole(WITHDRAW_ROLE) onlyEOA(to) whenNotPaused() {
-        IERC721(nft).safeTransferFrom(address(this), to, tokenId);
+    function withdrawERC721(address nft, address to, uint256 tokenID) external onlyRole(WITHDRAW_ROLE) onlyEOA(to) whenNotPaused() {
+        IERC721(nft).safeTransferFrom(address(this), to, tokenID);
     }
     
-    function batchWithdrawERC721(address nft, address[] calldata to, uint256[] calldata tokenIds) external onlyRole(WITHDRAW_ROLE) whenNotPaused() {
+    function batchWithdrawERC721(address nft, address[] calldata to, uint256[] calldata tokenID) external onlyRole(WITHDRAW_ROLE) whenNotPaused() {
         
-        require(tokenIds.length == to.length, "Array length must equal. ");
+        require(tokenID.length == to.length, "Array length must equal. ");
 
-        for (uint256 i = 0; i < tokenIds.length; i++) {
+        for (uint256 i = 0; i < tokenID.length; i++) {
             _onlyEOA(to[i]);
-            IERC721(nft).safeTransferFrom(address(this), to[i], tokenIds[i]);
+            IERC721(nft).safeTransferFrom(address(this), to[i], tokenID[i]);
         }
     }
 }
