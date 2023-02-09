@@ -5,7 +5,7 @@ const {
 const { anyValue } = require("@nomicfoundation/hardhat-chai-matchers/withArgs");
 const { expect } = require("chai");
 
-const { deployERC721Template, initUsers } = require('./common.js')
+const { mockDeploy, initUsers } = require('../components/common.js')
 
 describe("ERC721Template", function () {
   
@@ -19,7 +19,7 @@ describe("ERC721Template", function () {
     describe("get some states", function () {
 
       it("BaseURI should get ipfs url", async function() {
-        const { nft, config } = await loadFixture(deployERC721Template);
+        const { nft, config } = await loadFixture(mockDeploy);
         expect(await nft.baseURI()).to.be.eq(config.prefixURI);
       });    
     });
@@ -29,7 +29,7 @@ describe("ERC721Template", function () {
     describe("user mint", function () {
 
       it("Should mint token by merkle tree.", async function () {
-        const { nft, user } = await loadFixture(deployERC721Template);
+        const { nft, user } = await loadFixture(mockDeploy);
 
         const { bob } = await initUsers();
  
@@ -45,7 +45,7 @@ describe("ERC721Template", function () {
 
 
       it("Should mint token by self.", async function () {
-        const { nft } = await loadFixture(deployERC721Template);
+        const { nft } = await loadFixture(mockDeploy);
         
         const { bob } = await initUsers();
 
@@ -65,7 +65,7 @@ describe("ERC721Template", function () {
 
 
       it("Should mint token by owner.", async function () {
-        const { nft } = await loadFixture(deployERC721Template);
+        const { nft } = await loadFixture(mockDeploy);
         let tokenID  = 102; // 101 ~ 199
         
         const {operator, sam} = await initUsers();

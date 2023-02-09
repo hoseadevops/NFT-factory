@@ -9,18 +9,22 @@ const fs = require('fs');
 const keccak256 = require('keccak256')
 const { MerkleTree } = require('merkletreejs')
 
-async function player() {
-  const json = JSON.parse(fs.readFileSync('./test/player.json', { encoding: 'utf8' }))
+function getJson(fileDir) {
+  const json = JSON.parse(fs.readFileSync(fileDir, { encoding: 'utf8' }))
   if (typeof json !== 'object') throw new Error('Invalid JSON')
-  return Object.entries(json);
+  return json
+}
+
+async function player() {
+  return Object.entries(getJson("./components/player.json"));
 }
 
 async function initUsers() {
-  const [owner, admin, operator, bob, sam, tom ]  = await ethers.getSigners(); 
-  return { owner, admin, operator, bob, sam, tom };
+  const [admin, operator, bob, sam ]  = await ethers.getSigners(); 
+  return { admin, operator, bob, sam }; 
 }
 
-async function deployERC721Template() {
+async function mockMerkle() {
   // mock player
   let players = await player();   
     
@@ -35,6 +39,17 @@ async function deployERC721Template() {
   let testUser = players[10];
   const leaf = ethers.utils.solidityKeccak256(['address', 'uint256', 'string'], [testUser[0], testUser[1]+100, ""]);
   const proof = tree.getHexProof(leaf)
+  
+  let user = {
+    user : testUser[0],
+    tokenID : testUser[1] + 100,
+    proof
+  };
+
+  return { root, user };
+}
+
+async function deployERC721Template(admin, operator, root) {
 
   // construct nft
   let config = {
@@ -42,46 +57,38 @@ async function deployERC721Template() {
     symbol : 'symbol',
     prefixURI : 'https://ipfs.io/ipfs/',
     min : 101,
-    max : 199 
+    max : 199,
+    root,
+    isClaimable : true
   }
-  
-  const { admin, operator } = await initUsers();
 
   const ERC721Template = await ethers.getContractFactory("ERC721Template");
-  const nft = await ERC721Template.deploy (
-    true,
+  const nft = await ERC721Template.connect(admin).deploy (
+    config.isClaimable,
     admin.address, 
     operator.address, 
-    root, 
+    config.root,
     config.name, 
     config.symbol, 
     config.prefixURI,
     config.min,
     config.max
   );
-  let user = {
-    user : testUser[0],
-    tokenID : testUser[1] + 100,
-    proof
-  };
-  return { nft, config, user };
+
+  return { nft, config };
 }
 
-async function deployEscrow() {
-  const { admin, operator } = await initUsers();
-  const { nft, config, user} = await deployERC721Template();
+async function deployEscrow(admin, operator, nft) {
   const Escrow = await ethers.getContractFactory("Escrow");
   const escrow = await Escrow.deploy (
     admin.address,
     operator.address,
     nft.address
   );
-  return { escrow, nft, config, user };
+  return { escrow, nft };
 }
 
-async function deployVault() {
-  const { admin, operator } = await initUsers();
-  const { escrow, nft, config, user } = await deployEscrow();
+async function deployVault(admin, operator, escrow) {
   const Vault = await ethers.getContractFactory("Vault");
   const vault = await Vault.deploy (
     admin.address,
@@ -89,15 +96,31 @@ async function deployVault() {
     escrow.address
   );
 
-  await escrow.connect(operator).updateVault(vault.address);
-
-  return { vault, escrow, nft, config, user };
+  return { vault, escrow };
 }
 
+async function mockDeploy() {
+  const { owner, admin, operator, bob, sam, tom } = await initUsers();
+  const { root, user } = await mockMerkle();
+  const { nft, config } = await deployERC721Template(admin, operator, root);
+  const { escrow } = await deployEscrow(admin, operator, nft);
+  const { vault } = await deployVault(admin, operator, escrow);
+
+  await escrow.connect(operator).updateVault(vault.address);
+
+  return { vault, escrow, nft, config, user } 
+}
+
+
+
 module.exports = {
+    getJson,
+    mockMerkle,
     deployERC721Template,
     deployEscrow,
     deployVault,
-    initUsers
+    initUsers, 
+    mockDeploy
 }
+
 

@@ -5,7 +5,7 @@ const {
 const { anyValue } = require("@nomicfoundation/hardhat-chai-matchers/withArgs");
 const { expect } = require("chai");
   
-const { deployVault, initUsers } = require('./common.js')
+const { mockDeploy, initUsers } = require('../components/common.js')
 
 describe("Escrow", function () {
   describe("deposit", function () {  
@@ -13,8 +13,8 @@ describe("Escrow", function () {
     describe("vault", function () {  
 
       it("Should deposit to vault.", async function () {
-        const { vault, escrow, nft, config, user } = await loadFixture(deployVault);
-        const { bob,sam } = await initUsers();
+        const { vault, escrow, nft } = await loadFixture(mockDeploy);
+        const { bob, sam } = await initUsers();
 
         await expect(nft.connect(bob).selfMint("")).not.to.be.reverted;
         let tokenID1 = await nft.maxTokenID();
@@ -22,11 +22,11 @@ describe("Escrow", function () {
         await expect(nft.connect(bob).selfMint("")).not.to.be.reverted;
         let tokenID2 = await nft.maxTokenID();
 
+
         expect(await nft.ownerOf(tokenID1)).to.be.eq(bob.address);
         expect(await nft.ownerOf(tokenID2)).to.be.eq(bob.address);
-
+        
         await expect(nft.connect(bob)["safeTransferFrom(address,address,uint256)"](bob.address, escrow.address, tokenID1)).not.to.be.reverted;
-
         await expect(nft.connect(bob)["safeTransferFrom(address,address,uint256)"](bob.address, escrow.address, tokenID2)).to.be.revertedWith("Already holding");
 
         expect(await nft.ownerOf(tokenID1)).to.be.eq(vault.address);
