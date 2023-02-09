@@ -74,13 +74,13 @@ contract ERC721Template is
     }
 
     // Un-limited for owner
-    modifier onlyClaimable(){
+    modifier onlyClaimable() {
         require(isCanClaim, "Only Claimable");
          _;     
     }
 
     // merkleMint
-    modifier onlyOnce(address to) {
+    modifier onlyOnce( address to ) {
         require(!reserved[to], "Only Once");
          _;
     }
