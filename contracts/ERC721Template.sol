@@ -21,13 +21,15 @@ contract ERC721Template is
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
 
+    bool public isCanClaim;
+
     string public baseURI;
 
     uint256 public maxTokenID;
 
     bytes32 public merkleRoot;
 
-    // include boundary (uninterrupted)
+    // include boundary (uninterrupted tokenID)
     uint256 public merkleReservedMinTokenID;
     uint256 public merkleReservedMaxTokenID;
 
@@ -35,12 +37,8 @@ contract ERC721Template is
         return (tokenID >= merkleReservedMinTokenID && tokenID <= merkleReservedMaxTokenID);
     }
 
-    modifier whenNotReserved(uint256 tokenID) {
-        require(!isReservedTokenID(tokenID), "Reserved");
-        _;
-    }
     modifier whenReserved(uint256 tokenID) {
-        require(isReservedTokenID(tokenID), "Not reserved");
+        require(isReservedTokenID(tokenID), "Not Reserved");
         _;
     }
 
@@ -49,7 +47,10 @@ contract ERC721Template is
             maxTokenID = tokenID;
     }
 
+    mapping( address => bool ) public reserved;
+
     constructor (
+        bool claim,
         address admin,
         address operator,
         bytes32 merkleTreeRoot,
@@ -60,6 +61,7 @@ contract ERC721Template is
         uint256 reservedMaxTokenID
     ) ERC721(name, symbol) {
         baseURI = prefixURI;
+        isCanClaim = claim;
         merkleRoot = merkleTreeRoot;
         merkleReservedMinTokenID = reservedMinTokenID;
         merkleReservedMaxTokenID = reservedMaxTokenID;
@@ -69,10 +71,21 @@ contract ERC721Template is
         _grantRole(MINTER_ROLE, operator);
     }
 
-    function updateBaseURI (
-        string memory prefixURI
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    modifier onlyClaimable(){
+        require(isCanClaim, "Only Claimable");
+         _;     
+    }
+
+    modifier onlyOnce(address to) {
+        require(!reserved[to], "Only Once");
+         _;
+    }
+
+    function updateBaseURI ( string memory prefixURI ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         baseURI = prefixURI;
+    }
+    function updateIsCanClaim(bool claim ) external onlyRole(PAUSER_ROLE) {
+        isCanClaim = claim;
     }
 
     function _baseURI() internal view override returns (string memory) {
@@ -87,17 +100,19 @@ contract ERC721Template is
         _unpause();
     }
     
-    // merkle mint
+    // merkle mint（tokenID of reserved）
+    // Owner can mint tokenID of reserved
     function merkleMint (
         address to, 
         uint256 tokenID, 
         string memory uri, 
         bytes32[] calldata merkleProof
-    ) external whenReserved(tokenID) {
+    ) external whenNotPaused() whenReserved(tokenID) onlyOnce(to) onlyClaimable() {
         // Verify the merkle proof.
         bytes32 node = keccak256(abi.encodePacked(to, tokenID, uri));
         if (!MerkleProof.verify(merkleProof, merkleRoot, node)) revert InvalidProof();
         // mint
+        reserved[to] = true;
         _safeMint(to, tokenID);
         _setTokenURI(tokenID, uri);
     }
@@ -105,7 +120,7 @@ contract ERC721Template is
     // self mint
     function selfMint (
         string memory uri
-    ) external {
+    ) external whenNotPaused() onlyClaimable() {
         uint256 tokenID = maxTokenID + 1;
         if(isReservedTokenID(tokenID)) {
             tokenID = merkleReservedMaxTokenID + 1;
@@ -115,11 +130,12 @@ contract ERC721Template is
     }
 
     // (MINTER_ROLE) mint
+    // Owner can mint any tokenID of unused（It could be to the TokenID of reserved
     function ownerMint (
         address to, 
         uint256 tokenID, 
         string memory uri
-    ) external onlyRole(MINTER_ROLE) whenNotReserved(tokenID) {
+    ) external whenNotPaused() onlyRole(MINTER_ROLE) {
         _safeMint(to, tokenID);
         _setTokenURI(tokenID, uri);
     }
@@ -129,12 +145,10 @@ contract ERC721Template is
         address to, 
         uint256[] calldata TokenIDs, 
         string[] memory uris
-    ) external  onlyRole(MINTER_ROLE) {
+    ) external whenNotPaused() onlyRole(MINTER_ROLE) {
         require(TokenIDs.length == uris.length, "Array length must equal. ");
         
-        for (uint256 i = 0; i < TokenIDs.length; i++) {         
-            require(!isReservedTokenID(TokenIDs[i]), "Reserved");
-
+        for (uint256 i = 0; i < TokenIDs.length; i++) {
             _safeMint(to, TokenIDs[i]);
             _setTokenURI(TokenIDs[i], uris[i]);
         }

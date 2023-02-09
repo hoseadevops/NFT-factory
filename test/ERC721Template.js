@@ -5,7 +5,7 @@ const {
 const { anyValue } = require("@nomicfoundation/hardhat-chai-matchers/withArgs");
 const { expect } = require("chai");
 
-const { deployERC721Template } = require('./common.js')
+const { deployERC721Template, initUsers } = require('./common.js')
 
 describe("ERC721Template", function () {
   
@@ -29,35 +29,47 @@ describe("ERC721Template", function () {
     describe("user mint", function () {
 
       it("Should mint token by merkle tree.", async function () {
-        const { nft, config, proof, testUser, bob } = await loadFixture(deployERC721Template);
+        const { nft, user } = await loadFixture(deployERC721Template);
 
-        let test = {
-          user : testUser[0],
-          tokenID : testUser[1] + 100,
-          proof
-        };
-        await nft.connect(bob).merkleMint(
-          test.user,
-          test.tokenID,
-          "",
-          test.proof
-        )
-        expect(await nft.ownerOf(test.tokenID)).to.be.eq(test.user);
+        const { bob } = await initUsers();
+ 
+        await nft.connect(bob).merkleMint(user.user, user.tokenID, "", user.proof);
+
+        await expect(nft.connect(bob).merkleMint(user.user, user.tokenID, "", user.proof)).to.be.revertedWith("Only Once");
+
+        await expect(nft.connect(bob).merkleMint(user.user, 222, "", user.proof)).to.be.revertedWith("Not Reserved");
+
+        expect(await nft.ownerOf(user.tokenID)).to.be.eq(user.user);
         await getMaxTokenID(nft);
       });
 
+
       it("Should mint token by self.", async function () {
-        const { nft, config, proof, testUser, bob } = await loadFixture(deployERC721Template);
+        const { nft } = await loadFixture(deployERC721Template);
+        
+        const { bob } = await initUsers();
+
         await nft.connect(bob).selfMint("")
         let tokenID = await getMaxTokenID(nft);
         expect(await nft.ownerOf(tokenID)).to.be.eq(bob.address);
-        await getMaxTokenID(nft);
+
+        await nft.connect(bob).selfMint("")
+        tokenID = await getMaxTokenID(nft);
+        expect(await nft.ownerOf(tokenID)).to.be.eq(bob.address);
+
+        await nft.connect(bob).selfMint("")
+        tokenID = await getMaxTokenID(nft);
+        expect(await nft.ownerOf(tokenID)).to.be.eq(bob.address);
+
       });
 
+
       it("Should mint token by owner.", async function () {
-        const { nft, config, proof, testUser, bob, operator, sam} = await loadFixture(deployERC721Template);
+        const { nft } = await loadFixture(deployERC721Template);
         let tokenID  = 102; // 101 ~ 199
-        await expect(nft.connect(operator).ownerMint(sam.address, tokenID, "")).to.be.revertedWith("Reserved");
+        
+        const {operator, sam} = await initUsers();
+        await nft.connect(operator).ownerMint(sam.address, tokenID, "");
       
         tokenID  = 88;
         await nft.connect(operator).ownerMint(sam.address, tokenID, "");
