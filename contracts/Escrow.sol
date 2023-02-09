@@ -25,6 +25,9 @@ contract Escrow is
     // user => tokenID
     mapping(address => uint256 ) public ledger;
 
+    event Deposit(address indexed sender, address indexed from, uint256 tokenID);
+    event Withdraw(address indexed sender, address indexed to, uint256 tokenID);
+
     modifier onlyNFT(address token) {
         require(token.isContract(), "Only CA can call.");
         require(token == address(nft), "nonsupport");
@@ -66,11 +69,13 @@ contract Escrow is
     function deposit(uint256 tokenID) external whenNotPaused() whenNotHold(msg.sender) {
         recordLedger(msg.sender, tokenID);
         IERC721(nft).safeTransferFrom(msg.sender, address(vault), tokenID);
+        emit Deposit(msg.sender, msg.sender, tokenID);
     }
 
     function withdraw(uint256 tokenID) external whenNotPaused() onlyOwner(msg.sender, tokenID) {
         recordLedger(msg.sender, 0);
         IVault(vault).withdrawERC721(address(nft), msg.sender, tokenID);
+        emit Withdraw(msg.sender, msg.sender, tokenID);
     }
 
     function onERC721Received (
@@ -81,6 +86,7 @@ contract Escrow is
     ) public virtual override whenNotPaused() onlyNFT(msg.sender) whenNotHold(from) returns (bytes4) {
         recordLedger(from, tokenID);
         IERC721(nft).safeTransferFrom(address(this), address(vault), tokenID);
+        emit Deposit(msg.sender, from, tokenID);
         return this.onERC721Received.selector;
     }
 
@@ -88,16 +94,19 @@ contract Escrow is
         ledger[owner] = tokenID;
     }
 
-    function EmergencyWithdraw (
+    function EmergencyWithdrawVault (
         address[] calldata to,
         uint256[] calldata tokenID
     ) onlyRole(DEFAULT_ADMIN_ROLE) external {
         
         require(tokenID.length == to.length, "Array length must equal. ");
 
-        for( uint256 i = 0; i < tokenID.length; i++ ){
+        for( uint256 i = 0; i < tokenID.length; i++ ) {
             _onlyOwner(to[i], tokenID[i]);
+            recordLedger(to[i], 0);
+            emit Withdraw(msg.sender, to[i], tokenID[i]);
         }
+        
         IVault(vault).batchWithdrawERC721(address(nft), to, tokenID);
     }
 
