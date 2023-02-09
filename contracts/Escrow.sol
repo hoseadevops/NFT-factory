@@ -19,7 +19,6 @@ contract Escrow is
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
 
     IERC721 public nft;
-
     IVault public vault;
 
     // user => tokenID
@@ -106,7 +105,7 @@ contract Escrow is
             recordLedger(to[i], 0);
             emit Withdraw(msg.sender, to[i], tokenID[i]);
         }
-        
+
         IVault(vault).batchWithdrawERC721(address(nft), to, tokenID);
     }
 
