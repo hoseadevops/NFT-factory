@@ -17,11 +17,11 @@ npx hardhat node
 npx hardhat run ./scripts/deploy.nft.js --network localhost
 npx hardhat run ./scripts/deploy.escrow.js --network localhost
 npx hardhat run ./scripts/deploy.vault.js --network localhost
-npx hardhat run ./scripts/deploy.init.js --network localhost
+npx hardhat run ./scripts/init.js --network localhost
  
 npx hardhat run ./scripts/deploy.nft.js --network goerli
 npx hardhat run ./scripts/deploy.escrow.js --network goerli
 npx hardhat run ./scripts/deploy.vault.js --network goerli
-npx hardhat run ./scripts/deploy.init.js --network goerli
+npx hardhat run ./scripts/init.js --network goerli
 
 ```
