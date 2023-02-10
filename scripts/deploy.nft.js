@@ -6,17 +6,32 @@
 // global scope, and execute the script.
 const hre = require("hardhat");
 
-const { getJson, mockMerkle, deployERC721Template, initUsers } = require('../components/common.js')
+const { getJson, appDeploy, signer, gasCalculate } = require('../components/app.js')
 
 async function main() {
   
   const { merkleRoot } = getJson('./config.json');
-  const { admin, operator, bob, sam } = await initUsers();
-  const { nft, config } = await deployERC721Template(admin, operator, merkleRoot);
+  const { admin, operator } = await signer();
+  // nft
+  const paramERC721Template = [
+      true,
+      admin.address,
+      operator.address,
+      merkleRoot,
+      "name",
+      'symbol',
+      'https://ipfs.io/ipfs/',
+      101,
+      199
+    ]
+    const gas = await gasCalculate(admin, "ERC721Template", ...paramERC721Template);
+
+    const nft = await appDeploy(admin, "ERC721Template", paramERC721Template);
 
   console.log(
-    `nft deployed to ${nft.address}`,
-    config
+      `nft deployed to ${nft.address}`,
+      paramERC721Template,
+      gas
   );
 }
 

@@ -1,6 +1,6 @@
 require("@nomicfoundation/hardhat-toolbox");
-const { getJson } = require('./components/common.js')
 
+const { getJson } = require('./components/json.js')
 const appConfig = getJson('./config.json');
 
 const { ALCHEMY_API_KEY, GOERLI_PRIVATE_KEY1, GOERLI_PRIVATE_KEY2, ETHERSCAN_API_KEY } = appConfig;
@@ -16,7 +16,7 @@ module.exports = {
   //           viaIR: true,
   //           optimizer: {
   //               enabled: true,
-  //               runs: 1000000,
+  //               runs: 1000,
   //           },
   //       },
   //     }

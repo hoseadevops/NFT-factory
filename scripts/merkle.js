@@ -1,8 +1,9 @@
-const { mockMerkle } = require('../components/common.js')
+const { mockData, makeMerkle  } = require('../components/merkle/merkle.js')
 
 async function main() {
-  const { root, user } = await mockMerkle();
-  console.log({ root, user });
+  const data = mockData();
+  const { root, testUser } = await makeMerkle();
+  console.log({ data, root, testUser });
 }
   
 // We recommend this pattern to be able to use async/await everywhere
