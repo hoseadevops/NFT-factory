@@ -112,12 +112,13 @@ async function speedUp(signer, contract, overrides, ...arg) {
 
 async function getDeployedInstance(signer, contract) {
   const deployed = getDeployed();
-  if(deployed[contract] !== undefined) throw new Error('None Deployed');
+  if(deployed[contract] === undefined) throw new Error('None Deployed');
   const Contract = await ethers.getContractFactory(contract, { signer });
   return Contract.attach(deployed[contract]);
 }
 
 module.exports = {
+    getDeployed,
     getDeployedInstance,
     gasCalculate,
     deploy,

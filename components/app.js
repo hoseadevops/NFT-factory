@@ -1,4 +1,4 @@
-const { deploy, gasCalculate } = require('./deploy.js')
+const { deploy, gasCalculate, getDeployed, getDeployedInstance } = require('./deploy.js')
 const { makeMerkle } = require('./merkle/merkle.js')
 const { getJson } = require('./json.js')
 
@@ -60,6 +60,8 @@ async function mockDeploy() {
 
 module.exports = {
     getJson,
+    getDeployed,
+    getDeployedInstance,
     makeMerkle,
     deploy,
     appDeploy,
