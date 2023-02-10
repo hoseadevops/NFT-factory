@@ -4,8 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "compile": "npx hardhat compile --force",
-    "test": "npx hardhat test"
+    "compile": "npx hardhat compile --force"
   },
   "keywords": [],
   "author": "",

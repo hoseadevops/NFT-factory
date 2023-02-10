@@ -24,16 +24,14 @@ async function main() {
     operator.address,
     deployed['Escrow']
   ]
-  
+  console.log(paramVault)
+
   const gas = await gasCalculate(admin, "Vault", ...paramVault);
+  console.log(gas)
 
   const vault = await appDeploy(admin, 'Vault', paramVault);
 
-  console.log(
-      `nft deployed to ${vault.address}`,
-      paramVault,
-      gas
-  );
+  console.log(`nft deployed to ${vault.address}`);
 }
 
 // We recommend this pattern to be able to use async/await everywhere

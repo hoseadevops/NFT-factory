@@ -25,15 +25,15 @@ async function main() {
     deployed['ERC721Template']
   ]
   
+  console.log(paramEscrow);
+
   const gas = await gasCalculate(admin, "Escrow", ...paramEscrow);
+
+  console.log(gas);
 
   const escrow = await appDeploy(admin, 'Escrow', paramEscrow);
 
-  console.log(
-      `nft deployed to ${escrow.address}`,
-      paramEscrow,
-      gas
-  );
+  console.log(`nft deployed to ${escrow.address}`);
 }
 
 // We recommend this pattern to be able to use async/await everywhere

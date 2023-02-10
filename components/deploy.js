@@ -28,7 +28,7 @@ async function _deploy(signer, contract, overrides, ...arg ) {
     // 已经部署存在则不在重新部署
     const deployed = getDeployed();
     if( deployed[contract] !== undefined && network.name != 'hardhat' ) {
-        console.log(`${contract} deployed already!: `, deployed[contract]);
+        console.log(`${contract} deployed already on : `, deployed[contract]);
         return await getDeployedInstance(signer, contract);
     }
     // init
@@ -41,14 +41,15 @@ async function _deploy(signer, contract, overrides, ...arg ) {
     // deploy
     const instance = await Contract.deploy(...arg, overrides);
     
-    // show verify 
+    // show verify and tx 
     if(network.name != 'hardhat' && network.name != 'localhost') {
-        // 获取 nonce
-        const nonce = await ethers.provider.getTransactionCount(signer.address)
-        console.log(`nonce : ${nonce} `);
-        console.log(`yarn run verify --network ${ network.name } ${instance.address} ${arg.join(" ")}`);
+        // get nonce and hash
+        const hash = instance.deployTransaction['hash'];
+        const nonce = instance.deployTransaction['nonce'];
+        console.log(`nonce : ${nonce} ,  hash : ${hash} `);
+        console.log(`npx hardhat verify --network ${network.name} ${instance.address} ${arg.join(" ")}`);
     }
-  
+    
     // 等待 deployed
     await instance.deployTransaction.wait();
 
