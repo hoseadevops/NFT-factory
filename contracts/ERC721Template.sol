@@ -92,6 +92,10 @@ contract ERC721Template is
         isCanClaim = claim;
     }
 
+    function updateMerkleRoot(bytes32 root) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        merkleRoot = root;
+    }
+
     function _baseURI() internal view override returns (string memory) {
         return baseURI;
     }
