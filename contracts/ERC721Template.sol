@@ -66,7 +66,7 @@ contract ERC721Template is
         isCanClaim = claim;
         merkleRoot = merkleTreeRoot;
         
-        require(merkleReservedMaxTokenID > merkleReservedMinTokenID, "MaxTokenID");
+        require(reservedMaxTokenID > reservedMinTokenID, "MaxTokenID");
 
         merkleReservedMinTokenID = reservedMinTokenID;
         merkleReservedMaxTokenID = reservedMaxTokenID;
