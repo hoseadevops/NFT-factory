@@ -45,6 +45,7 @@ describe("ERC721Template", function () {
   });
 
   describe("mint", function () {
+    
     describe("user mint", function () {
 
       it("Should mint token by merkle tree.", async function () {
@@ -59,6 +60,7 @@ describe("ERC721Template", function () {
         await expect(nft.connect(bob).merkleMint(testUser.sender, 222, "", testUser.proof)).to.be.revertedWith("Not Reserved");
 
         expect(await nft.ownerOf(testUser.tokenID)).to.be.eq(testUser.sender);
+
         await getMaxTokenID(nft);
       });
 
