@@ -70,15 +70,15 @@ describe("ERC721Template", function () {
         
         const { bob } = await signer();
 
-        await nft.connect(bob).selfMint("")
+        await nft.connect(bob).selfMint()
         let tokenID = await getMaxTokenID(nft);
         expect(await nft.ownerOf(tokenID)).to.be.eq(bob.address);
 
-        await nft.connect(bob).selfMint("")
+        await nft.connect(bob).selfMint()
         tokenID = await getMaxTokenID(nft);
         expect(await nft.ownerOf(tokenID)).to.be.eq(bob.address);
 
-        await nft.connect(bob).selfMint("")
+        await nft.connect(bob).selfMint()
         tokenID = await getMaxTokenID(nft);
         expect(await nft.ownerOf(tokenID)).to.be.eq(bob.address);
 

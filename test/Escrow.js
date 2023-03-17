@@ -15,10 +15,10 @@ describe("Escrow", function () {
       const { vault, escrow, nft } = await loadFixture(mockDeploy);
       const { bob, sam } = await signer();
 
-      await expect(nft.connect(bob).selfMint("")).not.to.be.reverted;
+      await expect(nft.connect(bob).selfMint()).not.to.be.reverted;
       let tokenID1 = await nft.maxTokenID();
 
-      await expect(nft.connect(bob).selfMint("")).not.to.be.reverted;
+      await expect(nft.connect(bob).selfMint()).not.to.be.reverted;
       let tokenID2 = await nft.maxTokenID();
 
 

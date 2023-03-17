@@ -130,9 +130,7 @@ contract ERC721Template is
     }
 
     // self mint
-    function selfMint (
-        string memory uri
-    ) external whenNotPaused() onlyClaimable() {
+    function selfMint () external whenNotPaused() onlyClaimable() {
         // Get new tokenID
         uint256 tokenID = maxTokenID + 1;
         if(isReservedTokenID(tokenID)) {
@@ -140,7 +138,7 @@ contract ERC721Template is
         }
         // mint
          _safeMint(msg.sender, tokenID);
-        _setTokenURI(tokenID, uri);
+        _setTokenURI(tokenID, "");
     }
 
     // (MINTER_ROLE) mint
@@ -174,6 +172,10 @@ contract ERC721Template is
         uint256 tokenID, 
         uint256 batchSize
     ) internal whenNotPaused override(ERC721, ERC721Enumerable) {
+        // minting
+        if( from == address(0)) {
+            require(tokenID > 0, "tokenID can not be zero");
+        }
         super._beforeTokenTransfer(from, to, tokenID, batchSize);
     }
 
